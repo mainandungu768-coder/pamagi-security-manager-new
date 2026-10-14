@@ -143,6 +143,9 @@ footer { text-align: center; padding: 20px; color: #68768a; font-size: 12px; }
         <label>Deployment Site
           <input id="guardSite" required maxlength="100">
         </label>
+        <label>Guard Photo
+  <input id="guardPhoto" type="file" accept="image/*">
+</label>
         <button class="primary" type="submit">Register Guard</button>
       </form>
     </div>
@@ -157,7 +160,7 @@ footer { text-align: center; padding: 20px; color: #68768a; font-size: 12px; }
     <div class="panel table-wrap">
       <table>
         <thead>
-          <tr><th>Name</th><th>Phone</th><th>National ID</th><th>Site</th></tr>
+          <tr><th>Photo</th><th>Name</th><th>Phone</th><th>National ID</th><th>Site</th></tr>
         </thead>
         <tbody id="guardRows"></tbody>
       </table>
@@ -275,6 +278,20 @@ appData.guards.filter(function(guard) {
 }).forEach(function(guard) {
   
     const row = document.createElement("tr");
+  const photoCell = document.createElement("td");
+
+if (guard.photo) {
+  const img = document.createElement("img");
+  img.src = guard.photo;
+  img.alt = guard.name;
+  img.style.width = "55px";
+  img.style.height = "55px";
+  img.style.objectFit = "cover";
+  img.style.borderRadius = "50%";
+  photoCell.appendChild(img);
+}
+
+row.appendChild(photoCell);
     [guard.name, guard.phone, guard.nationalId, guard.site].forEach(function(value) {
       const cell = document.createElement("td");
       cell.textContent = value;
@@ -324,13 +341,27 @@ document.getElementById("guardEmpty").textContent =
       : "Register your first guard to get started.";
 }
 
-document.getElementById("guardForm").addEventListener("submit", function(event) {
+document.getElementById("guardForm").addEventListener("submit", async function(event) {
   event.preventDefault();
 
   const name = document.getElementById("guardName").value.trim();
   const phone = document.getElementById("guardPhone").value.trim();
   const nationalId = document.getElementById("guardId").value.trim();
   const site = document.getElementById("guardSite").value.trim();
+const photoFile = document.getElementById("guardPhoto").files[0];
+
+let photoData = "";
+
+if (photoFile) {
+  photoData = await new Promise(function(resolve, reject) {
+    const reader = new FileReader();
+    reader.onload = function() {
+      resolve(reader.result);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(photoFile);
+  });
+}
 
   if (!name || !phone || !nationalId || !site) {
     alert("Please complete all fields.");
@@ -350,7 +381,8 @@ document.getElementById("guardForm").addEventListener("submit", function(event) 
     name: name,
     phone: phone,
     nationalId: nationalId,
-    site: site
+    site: site,
+photo: photoData
   });
 
   saveData();
