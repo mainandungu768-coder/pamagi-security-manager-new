@@ -399,13 +399,172 @@ loginForm.addEventListener("submit", async function(event) {
     return;
   }
 
+  loginMessage.textContent = "Syncing your records...";
+
+const synced = await syncCloudData();
+
+if (synced) {
   loginMessage.textContent = "";
   loginScreen.style.display = "none";
+} else {
+  loginMessage.textContent =
+    "Login successful, but cloud sync failed. Please try again.";
+}
 });
 
-supabaseClient.auth.getSession().then(function(result) {
+ 
+async function syncCloudData() {
+  try {
+    // Keep a backup of the records on this device.
+    const localGuards = [...appData.guards];
+    const localAttendance = [...appData.attendance];
+
+    // Read the guards already stored in the cloud.
+    const { data: cloudGuards, error: guardsError } =
+      await supabaseClient
+        .from("pamagi_manager_guards")
+        .select("*");
+
+    if (guardsError) throw guardsError;
+
+    const guardIdMap = {};
+
+    // Match local guards to cloud guards, or upload new ones.
+    for (const guard of localGuards) {
+      let cloudGuard = cloudGuards.find(function(item) {
+        return guard.nationalId &&
+          item.national_id === guard.nationalId;
+      });
+
+      if (!cloudGuard) {
+        cloudGuard = cloudGuards.find(function(item) {
+          return item.name === guard.name &&
+            item.phone === (guard.phone || null) &&
+            item.site === (guard.site || null);
+        });
+      }
+
+      if (!cloudGuard) {
+        const { data, error } = await supabaseClient
+          .from("pamagi_manager_guards")
+          .insert({
+            name: guard.name,
+            phone: guard.phone || null,
+            national_id: guard.nationalId || null,
+            site: guard.site || null
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        cloudGuard = data;
+        cloudGuards.push(cloudGuard);
+      }
+
+      guardIdMap[guard.id] = cloudGuard.id;
+    }
+
+    // Read attendance already stored in the cloud.
+    const { data: cloudAttendance, error: attendanceError } =
+      await supabaseClient
+        .from("pamagi_manager_attendance")
+        .select("*");
+
+    if (attendanceError) throw attendanceError;
+
+    // Upload local attendance without duplicating matching records.
+    for (const record of localAttendance) {
+      const cloudGuardId = guardIdMap[record.guardId] ||
+        (cloudGuards.some(function(g) {
+          return g.id === record.guardId;
+        }) ? record.guardId : null);
+
+      if (!cloudGuardId) continue;
+
+      const existing = cloudAttendance.find(function(item) {
+        return item.guard_id === cloudGuardId &&
+          item.attendance_date === record.date;
+      });
+
+      if (existing) {
+        if (existing.status !== record.status) {
+          const { error } = await supabaseClient
+            .from("pamagi_manager_attendance")
+            .update({ status: record.status })
+            .eq("id", existing.id);
+
+          if (error) throw error;
+          existing.status = record.status;
+        }
+      } else {
+        const { data, error } = await supabaseClient
+          .from("pamagi_manager_attendance")
+          .insert({
+            guard_id: cloudGuardId,
+            attendance_date: record.date,
+            status: record.status
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        cloudAttendance.push(data);
+      }
+    }
+
+    // Refresh the app with the combined cloud records.
+    const { data: finalGuards, error: finalGuardsError } =
+      await supabaseClient
+        .from("pamagi_manager_guards")
+        .select("*");
+
+    if (finalGuardsError) throw finalGuardsError;
+
+    const { data: finalAttendance, error: finalAttendanceError } =
+      await supabaseClient
+        .from("pamagi_manager_attendance")
+        .select("*");
+
+    if (finalAttendanceError) throw finalAttendanceError;
+
+    appData.guards = finalGuards.map(function(g) {
+      return {
+        id: g.id,
+        name: g.name,
+        phone: g.phone || "",
+        nationalId: g.national_id || "",
+        site: g.site || ""
+      };
+    });
+
+    appData.attendance = finalAttendance.map(function(a) {
+      return {
+        guardId: a.guard_id,
+        date: a.attendance_date,
+        status: a.status
+      };
+    });
+
+    saveData();
+    renderApp();
+    return true;
+  } catch (error) {
+    console.error("Pamagi cloud sync failed:", error);
+    return false;
+  }
+}
+ 
+supabaseClient.auth.getSession().then(async function(result) {
   if (result.data.session) {
-    loginScreen.style.display = "none";
+    const synced = await syncCloudData();
+
+    if (synced) {
+      loginScreen.style.display = "none";
+    } else {
+      loginScreen.style.display = "block";
+      loginMessage.textContent =
+        "Cloud sync failed. Please sign in again.";
+    }
   }
 });
 
