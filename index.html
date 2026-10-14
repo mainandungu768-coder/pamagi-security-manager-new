@@ -86,6 +86,7 @@ footer { text-align: center; padding: 20px; color: #68768a; font-size: 12px; }
   th, td { padding: 9px; font-size: 13px; }
 }
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <header>
@@ -356,6 +357,14 @@ document.getElementById("attendanceForm").addEventListener("submit", function(ev
   renderApp();
   alert("Attendance saved on this device.");
 });
+const supabaseUrl = "https://tayckdpdmadofigcuwtb.supabase.co";
+const supabaseKey = "sb_publishable_fM8HHAbaHOamAbEA10nPFA_eNej42Zm";
+
+const supabaseClient = window.supabase.createClient(
+  supabaseUrl,
+  supabaseKey
+);
+
 
 loadData();
 renderApp();
