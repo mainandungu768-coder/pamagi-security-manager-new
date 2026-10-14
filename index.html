@@ -1,0 +1,364 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pamagi Security Manager</title>
+<style>
+:root {
+  --navy: #10233f;
+  --blue: #1769aa;
+  --bg: #f2f5f9;
+  --white: #ffffff;
+  --border: #dce3ec;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: #172437;
+}
+header {
+  background: var(--navy);
+  color: white;
+  padding: 20px;
+}
+header h1 { margin: 0 0 6px; font-size: 23px; }
+header p { margin: 0; color: #d6e2f0; font-size: 13px; }
+nav {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+button {
+  cursor: pointer;
+  border: 0;
+  border-radius: 7px;
+  padding: 11px 15px;
+  font-weight: bold;
+  font-size: 14px;
+}
+nav button { background: #e8eef6; color: var(--navy); }
+nav button.active, .primary { background: var(--blue); color: white; }
+main { max-width: 1100px; margin: auto; padding: 20px; }
+.page { display: none; }
+.page.active { display: block; }
+h2 { margin-top: 0; }
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.card, .panel {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+}
+.card small { color: #637187; }
+.card strong { display: block; font-size: 30px; margin-top: 9px; }
+form { display: grid; gap: 13px; }
+label { display: grid; gap: 6px; font-weight: bold; font-size: 14px; }
+input, select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #bdc9d8;
+  border-radius: 7px;
+  font-size: 15px;
+  background: white;
+}
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: white; }
+th, td { padding: 12px; border-bottom: 1px solid var(--border); text-align: left; }
+th { background: #edf2f8; }
+.empty { color: #66758a; padding: 20px 0; }
+.status { color: #855b00; font-size: 13px; }
+footer { text-align: center; padding: 20px; color: #68768a; font-size: 12px; }
+@media(max-width:600px) {
+  main { padding: 12px; }
+  header { padding: 16px; }
+  th, td { padding: 9px; font-size: 13px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>PAMAGI SECURITY</h1>
+  <p>Security Company Manager</p>
+</header>
+
+<nav>
+  <button class="active" data-page="dashboard">Dashboard</button>
+  <button data-page="guards">Register Guards</button>
+  <button data-page="attendance">Attendance</button>
+</nav>
+
+<main>
+  <section id="dashboard" class="page active">
+    <h2>Dashboard</h2>
+    <div class="cards">
+      <div class="card"><small>Total Guards</small><strong id="totalGuards">0</strong></div>
+      <div class="card"><small>Sites Covered</small><strong id="totalSites">0</strong></div>
+      <div class="card"><small>Attendance Records</small><strong id="totalAttendance">0</strong></div>
+    </div>
+    <div class="panel">
+      <h3>Recent Activity</h3>
+      <p id="dashboardMessage">Welcome to Pamagi Security Manager.</p>
+      <p class="status">Cloud storage has not been connected yet.</p>
+    </div>
+  </section>
+
+  <section id="guards" class="page">
+    <h2>Register a Guard</h2>
+    <div class="panel">
+      <form id="guardForm">
+        <label>Full Name
+          <input id="guardName" required maxlength="100">
+        </label>
+        <label>Phone Number
+          <input id="guardPhone" type="tel" required maxlength="30">
+        </label>
+        <label>National ID
+          <input id="guardId" required maxlength="30">
+        </label>
+        <label>Deployment Site
+          <input id="guardSite" required maxlength="100">
+        </label>
+        <button class="primary" type="submit">Register Guard</button>
+      </form>
+    </div>
+
+    <h3>Registered Guards</h3>
+    <div class="panel table-wrap">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Phone</th><th>National ID</th><th>Site</th></tr>
+        </thead>
+        <tbody id="guardRows"></tbody>
+      </table>
+      <p id="guardEmpty" class="empty">No guards registered yet.</p>
+    </div>
+  </section>
+
+  <section id="attendance" class="page">
+    <h2>Record Attendance</h2>
+    <div class="panel">
+      <form id="attendanceForm">
+        <label>Guard
+          <select id="attendanceGuard" required>
+            <option value="">Select a guard</option>
+          </select>
+        </label>
+        <label>Date
+          <input id="attendanceDate" type="date" required>
+        </label>
+        <label>Status
+          <select id="attendanceStatus" required>
+            <option value="Present">Present</option>
+            <option value="Absent">Absent</option>
+            <option value="Off Duty">Off Duty</option>
+            <option value="On Leave">On Leave</option>
+          </select>
+        </label>
+        <button class="primary" type="submit">Save Attendance</button>
+      </form>
+    </div>
+
+    <h3>Attendance History</h3>
+    <div class="panel table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Guard</th><th>Status</th></tr></thead>
+        <tbody id="attendanceRows"></tbody>
+      </table>
+      <p id="attendanceEmpty" class="empty">No attendance records yet.</p>
+    </div>
+  </section>
+</main>
+
+<footer>Pamagi Security Manager</footer>
+
+<script>
+"use strict";
+
+const STORAGE_KEY = "pamagiNewManagerData";
+let appData = { guards: [], attendance: [] };
+
+function loadData() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && Array.isArray(parsed.guards) &&
+          Array.isArray(parsed.attendance)) {
+        appData = parsed;
+      }
+    }
+  } catch (error) {
+    console.error("Could not load saved data:", error);
+  }
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+  } catch (error) {
+    alert("Could not save data in this browser.");
+    console.error(error);
+  }
+}
+
+function showPage(pageName) {
+  document.querySelectorAll(".page").forEach(function(page) {
+    page.classList.toggle("active", page.id === pageName);
+  });
+  document.querySelectorAll("nav button").forEach(function(button) {
+    button.classList.toggle("active", button.dataset.page === pageName);
+  });
+}
+
+document.querySelectorAll("nav button").forEach(function(button) {
+  button.addEventListener("click", function() {
+    showPage(button.dataset.page);
+  });
+});
+
+function renderApp() {
+  document.getElementById("totalGuards").textContent = appData.guards.length;
+
+  const sites = new Set(
+    appData.guards.map(function(guard) {
+      return guard.site.trim().toLowerCase();
+    }).filter(Boolean)
+  );
+  document.getElementById("totalSites").textContent = sites.size;
+  document.getElementById("totalAttendance").textContent =
+    appData.attendance.length;
+
+  const guardRows = document.getElementById("guardRows");
+  guardRows.replaceChildren();
+
+  appData.guards.forEach(function(guard) {
+    const row = document.createElement("tr");
+    [guard.name, guard.phone, guard.nationalId, guard.site].forEach(function(value) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+    });
+    guardRows.appendChild(row);
+  });
+
+  document.getElementById("guardEmpty").hidden = appData.guards.length > 0;
+
+  const guardSelect = document.getElementById("attendanceGuard");
+  const selectedValue = guardSelect.value;
+  guardSelect.replaceChildren(new Option("Select a guard", ""));
+  appData.guards.forEach(function(guard) {
+    guardSelect.add(new Option(guard.name, guard.id));
+  });
+  if (appData.guards.some(function(guard) {
+    return guard.id === selectedValue;
+  })) {
+    guardSelect.value = selectedValue;
+  }
+
+  const attendanceRows = document.getElementById("attendanceRows");
+  attendanceRows.replaceChildren();
+  appData.attendance.slice().reverse().forEach(function(record) {
+    const guard = appData.guards.find(function(item) {
+      return item.id === record.guardId;
+    });
+    const row = document.createElement("tr");
+    [record.date, guard ? guard.name : "Guard unavailable", record.status]
+      .forEach(function(value) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.appendChild(cell);
+      });
+    attendanceRows.appendChild(row);
+  });
+  document.getElementById("attendanceEmpty").hidden =
+    appData.attendance.length > 0;
+
+  document.getElementById("dashboardMessage").textContent =
+    appData.guards.length
+      ? "Your guard register is ready to manage."
+      : "Register your first guard to get started.";
+}
+
+document.getElementById("guardForm").addEventListener("submit", function(event) {
+  event.preventDefault();
+
+  const name = document.getElementById("guardName").value.trim();
+  const phone = document.getElementById("guardPhone").value.trim();
+  const nationalId = document.getElementById("guardId").value.trim();
+  const site = document.getElementById("guardSite").value.trim();
+
+  if (!name || !phone || !nationalId || !site) {
+    alert("Please complete all fields.");
+    return;
+  }
+
+  const duplicate = appData.guards.some(function(guard) {
+    return guard.nationalId === nationalId;
+  });
+  if (duplicate) {
+    alert("A guard with this National ID is already registered.");
+    return;
+  }
+
+  appData.guards.push({
+    id: "guard-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+    name: name,
+    phone: phone,
+    nationalId: nationalId,
+    site: site
+  });
+
+  saveData();
+  renderApp();
+  this.reset();
+  alert("Guard registered successfully on this device.");
+});
+
+document.getElementById("attendanceDate").value =
+  new Date().toLocaleDateString("en-CA");
+
+document.getElementById("attendanceForm").addEventListener("submit", function(event) {
+  event.preventDefault();
+
+  const guardId = document.getElementById("attendanceGuard").value;
+  const date = document.getElementById("attendanceDate").value;
+  const status = document.getElementById("attendanceStatus").value;
+
+  if (!guardId || !date || !status) {
+    alert("Please complete all attendance fields.");
+    return;
+  }
+
+  const existingIndex = appData.attendance.findIndex(function(record) {
+    return record.guardId === guardId && record.date === date;
+  });
+
+  const record = { guardId: guardId, date: date, status: status };
+  if (existingIndex >= 0) {
+    appData.attendance[existingIndex] = record;
+  } else {
+    appData.attendance.push(record);
+  }
+
+  saveData();
+  renderApp();
+  alert("Attendance saved on this device.");
+});
+
+loadData();
+renderApp();
+</script>
+</body>
+</html>
