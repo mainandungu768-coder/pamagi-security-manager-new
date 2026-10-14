@@ -148,6 +148,12 @@ footer { text-align: center; padding: 20px; color: #68768a; font-size: 12px; }
     </div>
 
     <h3>Registered Guards</h3>
+    <input
+  type="search"
+  id="guardSearch"
+  placeholder="Search guards by name, phone, ID or site..."
+  style="width:100%; padding:12px; margin-bottom:12px; box-sizing:border-box;"
+>
     <div class="panel table-wrap">
       <table>
         <thead>
@@ -255,8 +261,19 @@ function renderApp() {
 
   const guardRows = document.getElementById("guardRows");
   guardRows.replaceChildren();
+const searchTerm = document.getElementById("guardSearch").value.trim().toLowerCase();
 
-  appData.guards.forEach(function(guard) {
+appData.guards.filter(function(guard) {
+  return [
+    guard.name,
+    guard.phone,
+    guard.nationalId,
+    guard.site
+  ].some(function(value) {
+    return String(value || "").toLowerCase().includes(searchTerm);
+  });
+}).forEach(function(guard) {
+  
     const row = document.createElement("tr");
     [guard.name, guard.phone, guard.nationalId, guard.site].forEach(function(value) {
       const cell = document.createElement("td");
@@ -570,6 +587,9 @@ supabaseClient.auth.getSession().then(async function(result) {
 
 
 loadData();
+  document.getElementById("guardSearch").addEventListener("input", function() {
+  renderApp();
+});
 renderApp();
 </script>
 </body>
