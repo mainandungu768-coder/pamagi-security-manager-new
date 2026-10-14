@@ -283,7 +283,10 @@ appData.guards.filter(function(guard) {
     guardRows.appendChild(row);
   });
 
-  document.getElementById("guardEmpty").hidden = appData.guards.length > 0;
+const visibleGuardCount = guardRows.children.length;
+document.getElementById("guardEmpty").hidden = visibleGuardCount > 0;
+document.getElementById("guardEmpty").textContent =
+  visibleGuardCount > 0 ? "" : (searchTerm ? "No matching guards found." : "No guards registered yet.");
 
   const guardSelect = document.getElementById("attendanceGuard");
   const selectedValue = guardSelect.value;
