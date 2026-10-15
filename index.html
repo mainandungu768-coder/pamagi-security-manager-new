@@ -160,7 +160,9 @@ footer { text-align: center; padding: 20px; color: #68768a; font-size: 12px; }
     <div class="panel table-wrap">
       <table>
         <thead>
-          <tr><th>Photo</th><th>Name</th><th>Phone</th><th>National ID</th><th>Site</th></tr>
+        
+<tr><th>Photo</th><th>Name</th><th>Phone</th><th>National ID</th><th>Site</th><th>Action</th></tr>
+ 
         </thead>
         <tbody id="guardRows"></tbody>
       </table>
@@ -297,7 +299,55 @@ row.appendChild(photoCell);
       cell.textContent = value;
       row.appendChild(cell);
     });
+  
+    const actionCell = document.createElement("td");
+
+    const editButton = document.createElement("button");
+    editButton.textContent = "Edit";
+    editButton.type = "button";
+
+    editButton.onclick = function() {
+      const newName = prompt("Guard name:", guard.name);
+      if (newName === null) return;
+
+      const newPhone = prompt("Guard phone:", guard.phone);
+      if (newPhone === null) return;
+
+      const newId = prompt("National ID:", guard.nationalId);
+      if (newId === null) return;
+
+      const newSite = prompt("Assigned site:", guard.site);
+      if (newSite === null) return;
+
+      guard.name = newName.trim();
+      guard.phone = newPhone.trim();
+      guard.nationalId = newId.trim();
+      guard.site = newSite.trim();
+
+      saveData();
+      renderApp();
+    };
+
+    const deleteButton = document.createElement("button");
+    deleteButton.textContent = "Delete";
+    deleteButton.type = "button";
+
+    deleteButton.onclick = function() {
+      if (!confirm("Are you sure you want to delete " + guard.name + "?")) return;
+
+      appData.guards = appData.guards.filter(function(item) {
+        return item !== guard;
+      });
+
+      saveData();
+      renderApp();
+    };
+
+    actionCell.appendChild(editButton);
+    actionCell.appendChild(deleteButton);
+    row.appendChild(actionCell);
     guardRows.appendChild(row);
+
   });
 
 const visibleGuardCount = guardRows.children.length;
