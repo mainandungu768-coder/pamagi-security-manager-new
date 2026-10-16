@@ -332,16 +332,48 @@ row.appendChild(photoCell);
     deleteButton.textContent = "Delete";
     deleteButton.type = "button";
 
-    deleteButton.onclick = function() {
-      if (!confirm("Are you sure you want to delete " + guard.name + "?")) return;
+deleteButton.onclick = async function() {
+  if (!confirm("Are you sure you want to delete " + guard.name + "?")) {
+    return;
+  }
 
-      appData.guards = appData.guards.filter(function(item) {
-        return item !== guard;
-      });
+  try {
+    // If this guard has a cloud ID, delete cloud records first.
+    if (String(guard.id).indexOf("guard-") !== 0) {
+      const { error: attendanceError } = await supabaseClient
+        .from("pamagi_manager_attendance")
+        .delete()
+        .eq("guard_id", guard.id);
 
-      saveData();
-      renderApp();
-    };
+      if (attendanceError) throw attendanceError;
+
+      const { error: guardError } = await supabaseClient
+        .from("pamagi_manager_guards")
+        .delete()
+        .eq("id", guard.id);
+
+      if (guardError) throw guardError;
+    }
+
+    // Remove the guard and their attendance from this device.
+    appData.attendance = appData.attendance.filter(function(record) {
+      return record.guardId !== guard.id;
+    });
+
+    appData.guards = appData.guards.filter(function(item) {
+      return item.id !== guard.id;
+    });
+
+    saveData();
+    renderApp();
+
+    alert("Guard deleted successfully.");
+  } catch (error) {
+    console.error("Could not delete guard:", error);
+    alert("The guard could not be deleted from the cloud. Your local records have been kept. Please try again.");
+  }
+};
+
 
     actionCell.appendChild(editButton);
     actionCell.appendChild(deleteButton);
