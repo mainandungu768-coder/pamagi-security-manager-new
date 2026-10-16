@@ -601,6 +601,65 @@ async function syncCloudData() {
       }
 
       guardIdMap[guard.id] = cloudGuard.id;
+      
+      // Upload a local guard photo to cloud storage.
+      if (guard.photo && !cloudGuard.photo) {
+        let photoUrl = guard.photo;
+
+        if (guard.photo.startsWith("data:image/")) {
+          const commaIndex = guard.photo.indexOf(",");
+          const mimeMatch = guard.photo.match(
+            /^data:(image\/[^;]+);base64,/
+          );
+
+          if (commaIndex < 0 || !mimeMatch) {
+            throw new Error("The guard photo format is invalid.");
+          }
+
+          const mimeType = mimeMatch[1];
+          const extension = mimeType === "image/jpeg"
+            ? "jpg"
+            : (mimeType.split("/")[1] || "png").replace("svg+xml", "svg");
+
+          const filePath =
+            cloudGuard.id + "-" + Date.now() + "." + extension;
+
+          const base64Data = guard.photo.slice(commaIndex + 1);
+          const photoBytes = Uint8Array.from(
+            atob(base64Data),
+            function(character) {
+              return character.charCodeAt(0);
+            }
+          );
+
+          const { error: uploadError } = await supabaseClient
+            .storage
+            .from("guard-photos")
+            .upload(filePath, photoBytes, {
+              contentType: mimeType
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data: publicUrlData } = supabaseClient
+            .storage
+            .from("guard-photos")
+            .getPublicUrl(filePath);
+
+          photoUrl = publicUrlData.publicUrl;
+        }
+
+        const { error: photoUpdateError } = await supabaseClient
+          .from("pamagi_manager_guards")
+          .update({ photo: photoUrl })
+          .eq("id", cloudGuard.id);
+
+        if (photoUpdateError) throw photoUpdateError;
+
+        cloudGuard.photo = photoUrl;
+        guard.photo = photoUrl;
+      }
+
     }
 
     // Read attendance already stored in the cloud.
