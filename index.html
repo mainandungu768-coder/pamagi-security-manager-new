@@ -629,15 +629,25 @@ async function syncCloudData() {
 
     if (finalAttendanceError) throw finalAttendanceError;
 
-    appData.guards = finalGuards.map(function(g) {
-      return {
-        id: g.id,
-        name: g.name,
-        phone: g.phone || "",
-        nationalId: g.national_id || "",
-        site: g.site || ""
-      };
-    });
+appData.guards = finalGuards.map(function(g) {
+  var localGuard = localGuards.find(function(item) {
+    return (
+      (g.national_id && item.nationalId === g.national_id) ||
+      (item.name === g.name &&
+       item.phone === (g.phone || "") &&
+       item.site === (g.site || ""))
+    );
+  });
+
+  return {
+    id: g.id,
+    name: g.name,
+    phone: g.phone || "",
+    nationalId: g.national_id || "",
+    site: g.site || "",
+    photo: localGuard ? (localGuard.photo || "") : ""
+  };
+});
 
     appData.attendance = finalAttendance.map(function(a) {
       return {
