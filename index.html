@@ -347,14 +347,19 @@ deleteButton.onclick = async function() {
 
       if (attendanceError) throw attendanceError;
 
-      const { error: guardError } = await supabaseClient
-        .from("pamagi_manager_guards")
-        .delete()
-        .eq("id", guard.id);
+    
+const { data: deletedGuards, error: guardError } = await supabaseClient
+  .from("pamagi_manager_guards")
+  .delete()
+  .eq("id", guard.id)
+  .select("id");
 
-      if (guardError) throw guardError;
-    }
+if (guardError) throw guardError;
 
+if (!deletedGuards || deletedGuards.length === 0) {
+  throw new Error("Supabase did not delete a matching guard row. Check the guard ID and delete permissions.");
+}
+ 
     // Remove the guard and their attendance from this device.
     appData.attendance = appData.attendance.filter(function(record) {
       return record.guardId !== guard.id;
