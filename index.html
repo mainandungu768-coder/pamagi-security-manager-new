@@ -663,11 +663,14 @@ if (cloudGuard && cloudGuard.is_deleted === true) {
     if (attendanceError) throw attendanceError;
 
     // Upload local attendance without duplicating matching records.
-    for (const record of localAttendance) {
-      const cloudGuardId = guardIdMap[record.guardId] ||
-        (cloudGuards.some(function(g) {
-          return g.id === record.guardId;
-        }) ? record.guardId : null);
+    for (const record of localAttendance)
+    {
+     const matchingCloudGuard = cloudGuards.find(function(g) {
+  return g.id === record.guardId && g.is_deleted !== true;
+});
+
+const cloudGuardId = guardIdMap[record.guardId] ||
+  (matchingCloudGuard ? record.guardId : null);
 
       if (!cloudGuardId) continue;
 
