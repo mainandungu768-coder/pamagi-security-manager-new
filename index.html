@@ -338,32 +338,21 @@ deleteButton.onclick = async function() {
   }
 
   try {
-    // If this guard has a cloud ID, delete cloud records first.
-    if (String(guard.id).indexOf("guard-") !== 0) {
-      const { error: attendanceError } = await supabaseClient
-        .from("pamagi_manager_attendance")
-        .delete()
-        .eq("guard_id", guard.id);
+  // Mark the cloud guard as deleted instead of removing it.
+if (String(guard.id).indexOf("guard-") !== 0) {
+  const { data: updatedGuards, error: guardError } =
+    await supabaseClient
+      .from("pamagi_manager_guards")
+      .update({ is_deleted: true })
+      .eq("id", guard.id)
+      .select("id");
 
-      if (attendanceError) throw attendanceError;
+  if (guardError) throw guardError;
 
-    
-const { data: deletedGuards, error: guardError } = await supabaseClient
-  .from("pamagi_manager_guards")
-  .delete()
-  .eq("id", guard.id)
-  .select("id");
-
-if (guardError) throw guardError;
-
-if (!deletedGuards || deletedGuards.length === 0) {
-  throw new Error("Supabase did not delete a matching guard row. Check the guard ID and delete permissions.");
-}
+  if (!updatedGuards || updatedGuards.length === 0) {
+    throw new Error("Could not mark the guard as deleted in the cloud.");
   }
-    // Remove the guard and their attendance from this device.
-    appData.attendance = appData.attendance.filter(function(record) {
-      return record.guardId !== guard.id;
-    });
+}
 
     appData.guards = appData.guards.filter(function(item) {
       return item.id !== guard.id;
@@ -582,7 +571,10 @@ async function syncCloudData() {
             item.site === (guard.site || null);
         });
       }
-
+if (cloudGuard && cloudGuard.is_deleted === true) {
+  guardIdMap[guard.id] = null;
+  continue;
+}
       if (!cloudGuard) {
         const { data, error } = await supabaseClient
           .from("pamagi_manager_guards")
@@ -724,8 +716,11 @@ async function syncCloudData() {
         .select("*");
 
     if (finalAttendanceError) throw finalAttendanceError;
+const activeFinalGuards = finalGuards.filter(function(g) {
+  return g.is_deleted !== true;
+});
+appData.guards = activeFinalGuards.map(function(g) {
 
-appData.guards = finalGuards.map(function(g) {
   var localGuard = localGuards.find(function(item) {
     return (
       (g.national_id && item.nationalId === g.national_id) ||
