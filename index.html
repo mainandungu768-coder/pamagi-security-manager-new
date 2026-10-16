@@ -682,7 +682,7 @@ appData.guards = finalGuards.map(function(g) {
     phone: g.phone || "",
     nationalId: g.national_id || "",
     site: g.site || "",
-    photo: localGuard ? (localGuard.photo || "") : ""
+  photo: g.photo || (localGuard ? (localGuard.photo || "") : "") 
   };
 });
 
