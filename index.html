@@ -528,6 +528,18 @@ deleteButton.onclick = async function() {
   }
 
   try {
+  // Delete this guard's attendance history from the cloud first.
+  if (String(guard.id).indexOf("guard-") !== 0) {
+    const { error: attendanceDeleteError } = await supabaseClient
+      .from("pamagi_manager_attendance")
+      .delete()
+      .eq("guard_id", guard.id);
+
+    if (attendanceDeleteError) {
+      throw attendanceDeleteError;
+    }
+  }
+
   // Mark the cloud guard as deleted instead of removing it.
 if (String(guard.id).indexOf("guard-") !== 0) {
   const { data: updatedGuards, error: guardError } =
@@ -544,9 +556,16 @@ if (String(guard.id).indexOf("guard-") !== 0) {
   }
 }
 
+    // Remove the guard from the local register.
     appData.guards = appData.guards.filter(function(item) {
-      return item.id !== guard.id;
+      return String(item.id) !== String(guard.id);
     });
+
+    // Remove only this guard's attendance history.
+    appData.attendance = appData.attendance.filter(function(item) {
+      return String(item.guardId) !== String(guard.id);
+    });
+
 
     saveData();
     renderApp();
