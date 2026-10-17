@@ -185,6 +185,15 @@ footer { text-align: center; padding: 20px; color: #68768a; font-size: 12px; }
   <div id="calendarGrid" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;">
   </div>
 
+<div id="calendarSummary" style="margin-top:18px;padding:14px;background:#f2f5f9;border-radius:8px;">
+  <h3 style="margin-top:0;">Monthly Attendance Summary</h3>
+
+  <p>🟢 Present: <strong id="presentCount">0</strong> days</p>
+  <p>🔴 Absent: <strong id="absentCount">0</strong> days</p>
+  <p>🟠 On Leave: <strong id="leaveCount">0</strong> days</p>
+  <p>🔵 Off Duty: <strong id="offDutyCount">0</strong> days</p>
+</div>
+
   <p id="calendarMessage" class="status">
     Select a guard to view their attendance calendar.
   </p>
@@ -292,6 +301,26 @@ function renderGuardCalendar() {
 
   title.textContent = guard.name + " — Attendance";
 
+  const monthRecords = appData.attendance.filter(function(item) {
+    return String(item.guardId) === String(guard.id) &&
+      item.date &&
+      item.date.slice(0, 7) ===
+        calendarViewDate.getFullYear() + "-" +
+        String(calendarViewDate.getMonth() + 1).padStart(2, "0");
+  });
+
+  document.getElementById("presentCount").textContent =
+    monthRecords.filter(item => item.status === "Present").length;
+
+  document.getElementById("absentCount").textContent =
+    monthRecords.filter(item => item.status === "Absent").length;
+
+  document.getElementById("leaveCount").textContent =
+    monthRecords.filter(item => item.status === "On Leave").length;
+
+  document.getElementById("offDutyCount").textContent =
+    monthRecords.filter(item => item.status === "Off Duty").length;
+
   const year = calendarViewDate.getFullYear();
   const month = calendarViewDate.getMonth();
 
@@ -333,11 +362,21 @@ function renderGuardCalendar() {
     cell.style.padding = "9px 0";
     cell.style.minWidth = "0";
     cell.style.borderRadius = "6px";
+  
+    const statusColors = {
+      "Present": "#bbf7d0",
+      "Absent": "#fecaca",
+      "On Leave": "#fed7aa",
+      "Off Duty": "#bfdbfe"
+    };
+
     cell.style.background = record
-      ? "#d1fae5"
+      ? (statusColors[record.status] || "#d1fae5")
       : "#edf2f8";
+
     cell.style.color = "#10233f";
     cell.title = record ? record.status : "Not marked";
+
 
     cell.onclick = function() {
       
