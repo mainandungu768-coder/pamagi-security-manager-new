@@ -172,6 +172,24 @@ footer { text-align: center; padding: 20px; color: #68768a; font-size: 12px; }
 
   <section id="attendance" class="page">
     <h2>Record Attendance</h2>
+    
+<div class="panel" id="guardCalendarPanel" style="margin-bottom:20px;">
+  <h3 id="calendarGuardName">Guard Attendance Calendar</h3>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+    <button type="button" id="previousMonth">← Previous</button>
+    <strong id="calendarMonth"></strong>
+    <button type="button" id="nextMonth">Next →</button>
+  </div>
+
+  <div id="calendarGrid" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;">
+  </div>
+
+  <p id="calendarMessage" class="status">
+    Select a guard to view their attendance calendar.
+  </p>
+</div>
+
     <div class="panel">
       <form id="attendanceForm">
         <label>Guard
@@ -252,6 +270,109 @@ document.querySelectorAll("nav button").forEach(function(button) {
   });
 });
 
+let calendarGuardId = "";
+let calendarViewDate = new Date();
+
+function renderGuardCalendar() {
+  const guard = appData.guards.find(function(item) {
+    return String(item.id) === String(calendarGuardId);
+  });
+
+  const grid = document.getElementById("calendarGrid");
+  const message = document.getElementById("calendarMessage");
+  const title = document.getElementById("calendarGuardName");
+
+  grid.replaceChildren();
+
+  if (!guard) {
+    title.textContent = "Guard Attendance Calendar";
+    message.textContent = "Select a guard to view their attendance calendar.";
+    return;
+  }
+
+  title.textContent = guard.name + " — Attendance";
+
+  const year = calendarViewDate.getFullYear();
+  const month = calendarViewDate.getMonth();
+
+  document.getElementById("calendarMonth").textContent =
+    calendarViewDate.toLocaleDateString("en-GB", {
+      month: "long",
+      year: "numeric"
+    });
+
+  ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].forEach(function(day) {
+    const cell = document.createElement("div");
+    cell.textContent = day;
+    cell.style.fontWeight = "bold";
+    cell.style.padding = "6px 0";
+    grid.appendChild(cell);
+  });
+
+  const firstDay = new Date(year, month, 1);
+  const startingDay = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  for (let i = 0; i < startingDay; i++) {
+    grid.appendChild(document.createElement("div"));
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = year + "-" +
+      String(month + 1).padStart(2, "0") + "-" +
+      String(day).padStart(2, "0");
+
+    const record = appData.attendance.find(function(item) {
+      return String(item.guardId) === String(guard.id) &&
+        item.date === date;
+    });
+
+    const cell = document.createElement("button");
+    cell.type = "button";
+    cell.textContent = day;
+    cell.style.padding = "9px 0";
+    cell.style.minWidth = "0";
+    cell.style.borderRadius = "6px";
+    cell.style.background = record
+      ? "#d1fae5"
+      : "#edf2f8";
+    cell.style.color = "#10233f";
+    cell.title = record ? record.status : "Not marked";
+
+    cell.onclick = function() {
+      
+      document.getElementById("attendanceGuard").value = guard.id;
+      document.getElementById("attendanceDate").value = date;
+
+      if (record) {
+        document.getElementById("attendanceStatus").value = record.status;
+      }
+
+      message.textContent =
+        date + (record ? " — " + record.status : " — Not marked") +
+        ". Choose a status in the form below and save.";
+    };
+
+    grid.appendChild(cell);
+  }
+
+  message.textContent =
+    "Green dates have attendance records. Tap any date to mark or update it.";
+}
+
+document.getElementById("previousMonth").onclick = function() {
+  calendarViewDate.setMonth(calendarViewDate.getMonth() - 1);
+  renderGuardCalendar();
+};
+
+document.getElementById("nextMonth").onclick = function() {
+  calendarViewDate.setMonth(calendarViewDate.getMonth() + 1);
+  renderGuardCalendar();
+};
+document.getElementById("attendanceGuard").addEventListener("change", function() {
+  calendarGuardId = this.value;
+  renderGuardCalendar();
+});
 function renderApp() {
   document.getElementById("totalGuards").textContent = appData.guards.length;
 
@@ -294,12 +415,35 @@ if (guard.photo) {
 }
 
 row.appendChild(photoCell);
-    [guard.name, guard.phone, guard.nationalId, guard.site].forEach(function(value) {
+  
+    [guard.name, guard.phone, guard.nationalId, guard.site].forEach(function(value, index) {
       const cell = document.createElement("td");
-      cell.textContent = value;
+
+      if (index === 0) {
+        const nameButton = document.createElement("button");
+        nameButton.type = "button";
+        nameButton.textContent = value;
+        nameButton.style.background = "transparent";
+        nameButton.style.color = "#1769aa";
+        nameButton.style.padding = "4px";
+        nameButton.style.textAlign = "left";
+        nameButton.style.textDecoration = "underline";
+
+        nameButton.onclick = function() {
+          calendarGuardId = guard.id;
+          calendarViewDate = new Date();
+          showPage("attendance");
+          renderGuardCalendar();
+        };
+
+        cell.appendChild(nameButton);
+      } else {
+        cell.textContent = value;
+      }
+
       row.appendChild(cell);
     });
-  
+ 
     const actionCell = document.createElement("td");
 
     const editButton = document.createElement("button");
@@ -495,8 +639,11 @@ document.getElementById("attendanceForm").addEventListener("submit", function(ev
 
   saveData();
   renderApp();
+  renderGuardCalendar();
   alert("Attendance saved on this device.");
 });
+
+  
 const supabaseUrl = "https://tayckdpdmadofigcuwtb.supabase.co";
 const supabaseKey = "sb_publishable_fM8HHAbaHOamAbEA10nPFA_eNej42Zm";
 
