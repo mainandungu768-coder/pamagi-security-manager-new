@@ -582,24 +582,85 @@ document.getElementById("guardEmpty").textContent =
   })) {
     guardSelect.value = selectedValue;
   }
-
   const attendanceRows = document.getElementById("attendanceRows");
   attendanceRows.replaceChildren();
+
   appData.attendance.slice().reverse().forEach(function(record) {
     const guard = appData.guards.find(function(item) {
-      return item.id === record.guardId;
+      return String(item.id) === String(record.guardId);
     });
+
     const row = document.createElement("tr");
+
     [record.date, guard ? guard.name : "Guard unavailable", record.status]
       .forEach(function(value) {
         const cell = document.createElement("td");
         cell.textContent = value;
         row.appendChild(cell);
       });
+
+    const actionCell = document.createElement("td");
+    const deleteButton = document.createElement("button");
+
+    deleteButton.type = "button";
+    deleteButton.textContent = "Delete";
+    deleteButton.style.background = "#dc2626";
+    deleteButton.style.color = "white";
+
+    deleteButton.onclick = async function() {
+      const confirmed = confirm(
+        "Delete attendance for " +
+        (guard ? guard.name : "this guard") +
+        " on " + record.date + "?"
+      );
+
+      if (!confirmed) return;
+
+      deleteButton.disabled = true;
+      deleteButton.textContent = "Deleting...";
+
+      try {
+        const { error } = await supabaseClient
+          .from("pamagi_manager_attendance")
+          .delete()
+          .eq("guard_id", record.guardId)
+          .eq("attendance_date", record.date);
+
+        if (error) throw error;
+
+        appData.attendance = appData.attendance.filter(function(item) {
+          return !(
+            String(item.guardId) === String(record.guardId) &&
+            item.date === record.date
+          );
+        });
+
+        saveData();
+        renderApp();
+        renderGuardCalendar();
+
+        alert("Attendance history deleted successfully.");
+      } catch (error) {
+        console.error("Attendance deletion failed:", error);
+        alert(
+          "Could not delete attendance from the cloud. " +
+          "No local records were removed. Please check your connection " +
+          "or Supabase permissions and try again."
+        );
+
+        deleteButton.disabled = false;
+        deleteButton.textContent = "Delete";
+      }
+    };
+
+    actionCell.appendChild(deleteButton);
+    row.appendChild(actionCell);
     attendanceRows.appendChild(row);
   });
+
   document.getElementById("attendanceEmpty").hidden =
     appData.attendance.length > 0;
+ 
 
   document.getElementById("dashboardMessage").textContent =
     appData.guards.length
