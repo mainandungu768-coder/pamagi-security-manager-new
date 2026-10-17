@@ -620,14 +620,23 @@ document.getElementById("guardEmpty").textContent =
       deleteButton.textContent = "Deleting...";
 
       try {
-        const { error } = await supabaseClient
-          .from("pamagi_manager_attendance")
-          .delete()
-          .eq("guard_id", record.guardId)
-          .eq("attendance_date", record.date);
+      
+const { data: deletedRows, error } = await supabaseClient
+  .from("pamagi_manager_attendance")
+  .delete()
+  .eq("guard_id", record.guardId)
+  .eq("attendance_date", record.date)
+  .select("id");
 
-        if (error) throw error;
+if (error) throw error;
 
+if (!deletedRows || deletedRows.length === 0) {
+  throw new Error(
+    "No attendance row was deleted in the cloud. Check Supabase permissions."
+  );
+}
+
+          
         appData.attendance = appData.attendance.filter(function(item) {
           return !(
             String(item.guardId) === String(record.guardId) &&
