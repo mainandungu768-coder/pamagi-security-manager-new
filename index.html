@@ -87,6 +87,7 @@ footer { text-align: center; padding: 20px; color: #68768a; font-size: 12px; }
 }
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
   <div id="loginScreen" style="position:fixed;inset:0;z-index:99999;background:#101827;color:white;display:flex;align-items:center;justify-content:center;padding:20px;font-family:Arial,sans-serif;">
@@ -110,11 +111,53 @@ footer { text-align: center; padding: 20px; color: #68768a; font-size: 12px; }
   <button class="active" data-page="dashboard">Dashboard</button>
   <button data-page="guards">Register Guards</button>
   <button data-page="attendance">Attendance</button>
+<button data-page="sitesMap">Sites Map</button>
 </nav>
 <button data-page="adminPortal">Admin Portal</button>
 <button data-page="supervisorPortal">Supervisor Portal</button>
 <button data-page="guardPortal">Guard Portal</button>
+
 <section id="adminPortal" class="page">
+  <h2>Administrator Portal</h2>
+
+  <div class="cards">
+    <div class="card">
+      <small>Total Guards</small>
+      <strong id="adminTotalGuards">0</strong>
+    </div>
+
+    <div class="card">
+      <small>Active Guards</small>
+      <strong id="adminActiveGuards">0</strong>
+    </div>
+
+    <div class="card">
+      <small>Deployment Sites</small>
+      <strong id="adminTotalSites">0</strong>
+    </div>
+
+    <div class="card">
+      <small>Attendance Records</small>
+      <strong id="adminTotalAttendance">0</strong>
+    </div>
+
+    <div class="card">
+      <small>Payroll Records</small>
+      <strong id="adminTotalPayroll">0</strong>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Administrator Dashboard</h3>
+    <p id="adminWelcome">
+      Welcome to PAMAGI Security Management.
+    </p>
+    <p id="adminSyncStatus" class="status">
+      Waiting for cloud data...
+    </p>
+  </div>
+</section>
+
   <h2>Administrator Portal</h2>
 
   <div class="cards">
@@ -278,7 +321,28 @@ footer { text-align: center; padding: 20px; color: #68768a; font-size: 12px; }
       <p id="attendanceEmpty" class="empty">No attendance records yet.</p>
     </div>
   </section>
-</main>
+<section id="sitesMap" class="page">
+    <h2>Client Sites Map</h2>
+    <p>View Pamagi Security client sites across Kenya.</p>
+<div class="panel" style="margin-bottom:15px;">
+    <h3>Add Client Site Location</h3>
+    <form id="siteLocationForm">
+        <label>Site Name
+            <input id="mapSiteName" required maxlength="100">
+        </label>
+        <label>Latitude
+            <input id="mapLatitude" type="number" step="any" min="-90" max="90" required>
+        </label>
+        <label>Longitude
+            <input id="mapLongitude" type="number" step="any" min="-180" max="180" required>
+        </label>
+        <button class="primary" type="submit">Save Site Location</button>
+    </form>
+</div>
+  
+    <div id="pamagiMap" style="height:450px; width:100%; border-radius:12px; margin-top:15px;"></div>
+</section>
+  </main>
 
 <footer>Pamagi Security Manager</footer>
 
@@ -286,7 +350,7 @@ footer { text-align: center; padding: 20px; color: #68768a; font-size: 12px; }
 "use strict";
 
 const STORAGE_KEY = "pamagiNewManagerData";
-let appData = { guards: [], attendance: [] };
+let appData = { guards: [], attendance: [], siteLocations: [] };
 
 function loadData() {
   try {
@@ -296,6 +360,9 @@ function loadData() {
       if (parsed && Array.isArray(parsed.guards) &&
           Array.isArray(parsed.attendance)) {
         appData = parsed;
+      if (!Array.isArray(appData.siteLocations)) {
+    appData.siteLocations = [];
+}
       }
     }
   } catch (error) {
@@ -515,6 +582,7 @@ row.appendChild(photoCell);
         nameButton.style.padding = "4px";
         nameButton.style.textAlign = "left";
         nameButton.style.textDecoration = "underline";
+        
 
         nameButton.onclick = function() {
           calendarGuardId = guard.id;
@@ -1155,12 +1223,163 @@ supabaseClient.auth.getSession().then(async function(result) {
   }
 });
 
+async function loadAdminDashboard() {
+  try {
+    const [
+      guardsResult,
+      sitesResult,
+      attendanceResult,
+      payrollResult
+    ] = await Promise.all([
+      supabaseClient
+        .from("pamagi_manager_guards")
+        .select("id, is_deleted"),
+
+      supabaseClient
+        .from("pamagi_sites")
+        .select("id"),
+
+      supabaseClient
+        .from("pamagi_manager_attendance")
+        .select("id"),
+
+      supabaseClient
+        .from("pamagi_payroll")
+        .select("id")
+    ]);
+
+    if (guardsResult.error) throw guardsResult.error;
+    if (sitesResult.error) throw sitesResult.error;
+    if (attendanceResult.error) throw attendanceResult.error;
+    if (payrollResult.error) throw payrollResult.error;
+
+    const guards = guardsResult.data || [];
+
+    document.getElementById("adminTotalGuards").textContent =
+      guards.length;
+
+    document.getElementById("adminActiveGuards").textContent =
+      guards.filter(g => !g.is_deleted).length;
+
+    document.getElementById("adminTotalSites").textContent =
+      sitesResult.data.length;
+
+    document.getElementById("adminTotalAttendance").textContent =
+      attendanceResult.data.length;
+
+    document.getElementById("adminTotalPayroll").textContent =
+      payrollResult.data.length;
+
+    document.getElementById("adminWelcome").textContent =
+      "Welcome " + (currentProfile?.full_name || "Administrator");
+
+    document.getElementById("adminSyncStatus").textContent =
+      "Dashboard successfully connected to Supabase.";
+
+  } catch (error) {
+    console.error("Admin dashboard error:", error);
+
+    document.getElementById("adminSyncStatus").textContent =
+      "Could not load dashboard data. Check your permissions.";
+  }
+}
+
 
 loadData();
   document.getElementById("guardSearch").addEventListener("input", function() {
   renderApp();
 });
 renderApp();
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let pamagiLeafletMap = null;
+let pamagiSiteMarkers = [];
+
+function displayPamagiSites() {
+    if (!pamagiLeafletMap) return;
+
+    pamagiSiteMarkers.forEach(function(marker) {
+        pamagiLeafletMap.removeLayer(marker);
+    });
+    pamagiSiteMarkers = [];
+
+    appData.siteLocations.forEach(function(site) {
+        let guardCount = appData.guards.filter(function(guard) {
+            return (guard.site || "").trim().toLowerCase() === site.name.trim().toLowerCase();
+        }).length;
+
+        let marker = L.marker([site.latitude, site.longitude]).addTo(pamagiLeafletMap);
+
+        let popup = document.createElement("div");
+        let heading = document.createElement("strong");
+        heading.textContent = site.name;
+
+        let details = document.createElement("p");
+        details.textContent = "Guards assigned: " + guardCount;
+
+        popup.appendChild(heading);
+        popup.appendChild(details);
+        marker.bindPopup(popup);
+
+        pamagiSiteMarkers.push(marker);
+    });
+}
+
+function initializePamagiMap() {
+    if (pamagiLeafletMap) {
+        pamagiLeafletMap.invalidateSize();
+        displayPamagiSites();
+        return;
+    }
+
+    pamagiLeafletMap = L.map("pamagiMap").setView([0.0236, 37.9062], 6);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(pamagiLeafletMap);
+
+    displayPamagiSites();
+}
+
+document.querySelector('button[data-page="sitesMap"]').addEventListener("click", function() {
+    initializePamagiMap();
+});
+
+document.getElementById("siteLocationForm").addEventListener("submit", function(event) {
+    event.preventDefault();
+
+    let name = document.getElementById("mapSiteName").value.trim();
+    let latitude = Number(document.getElementById("mapLatitude").value);
+    let longitude = Number(document.getElementById("mapLongitude").value);
+
+    if (!name || !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+        latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+        alert("Please enter a valid site name, latitude and longitude.");
+        return;
+    }
+
+    let existingSite = appData.siteLocations.find(function(site) {
+        return site.name.toLowerCase() === name.toLowerCase();
+    });
+
+    if (existingSite) {
+        existingSite.latitude = latitude;
+        existingSite.longitude = longitude;
+    } else {
+        appData.siteLocations.push({
+            name: name,
+            latitude: latitude,
+            longitude: longitude
+        });
+    }
+
+    saveData();
+    displayPamagiSites();
+    this.reset();
+
+    alert("Client site location saved successfully.");
+});
 </script>
 </body>
 </html>
