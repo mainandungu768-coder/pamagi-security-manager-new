@@ -791,7 +791,47 @@ const supabaseClient = window.supabase.createClient(
   supabaseUrl,
   supabaseKey
 );
+let currentProfile = null;
 
+async function loadUserProfile() {
+  const { data: { user }, error: authError } =
+    await supabaseClient.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("User is not authenticated.");
+  }
+
+  const { data, error } = await supabaseClient
+    .from("pamagi_profiles")
+    .select("id, full_name, role, active")
+    .eq("id", user.id)
+    .single();
+
+  if (error) throw error;
+
+  if (!data.active) {
+    await supabaseClient.auth.signOut();
+    throw new Error("Your PAMAGI account is inactive.");
+  }
+
+  currentProfile = data;
+
+  return data;
+}
+async function verifyPamagiAccess() {
+  try {
+    const profile = await loadUserProfile();
+
+    console.log("PAMAGI USER:", profile.full_name);
+    console.log("PAMAGI ROLE:", profile.role);
+
+    return profile;
+  } catch (error) {
+    console.error("PAMAGI access error:", error.message);
+    return null;
+  }
+}
+  
 const loginForm = document.getElementById("loginForm");
 const loginMessage = document.getElementById("loginMessage");
 const loginScreen = document.getElementById("loginScreen");
