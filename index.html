@@ -111,8 +111,49 @@ footer { text-align: center; padding: 20px; color: #68768a; font-size: 12px; }
   <button data-page="guards">Register Guards</button>
   <button data-page="attendance">Attendance</button>
 </nav>
+<button data-page="adminPortal">Admin Portal</button>
+<button data-page="supervisorPortal">Supervisor Portal</button>
+<button data-page="guardPortal">Guard Portal</button>
+<section id="adminPortal" class="page">
+  <h2>Administrator Portal</h2>
 
-<main>
+  <div class="cards">
+    <div class="card">
+      <small>Management</small>
+      <strong>Admin</strong>
+    </div>
+
+    <div class="card">
+      <small>Currency</small>
+      <strong>KES</strong>
+    </div>
+
+    <div class="card">
+      <small>Backend</small>
+      <strong>Supabase</strong>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Administrator Dashboard</h3>
+    <p>Manage guards, supervisors, sites, attendance and payroll.</p>
+  </div>
+</section>
+
+<section id="supervisorPortal" class="page">
+  <h2>Supervisor Portal</h2>
+  <div class="panel">
+    <p>Supervisor site management will appear here.</p>
+  </div>
+</section>
+
+<section id="guardPortal" class="page">
+  <h2>Guard Portal</h2>
+  <div class="panel">
+    <p>Guard attendance and personal records will appear here.</p>
+  </div>
+</section>
+  <main>
   <section id="dashboard" class="page active">
     <h2>Dashboard</h2>
     <div class="cards">
@@ -855,13 +896,26 @@ loginForm.addEventListener("submit", async function(event) {
   }
 
   loginMessage.textContent = "Syncing your records...";
-
 const synced = await syncCloudData();
 
 if (synced) {
-  loginMessage.textContent = "";
-  loginScreen.style.display = "none";
-} else {
+  try {
+    const profile = await loadUserProfile();
+
+    loginMessage.textContent = "";
+
+    loginScreen.style.display = "none";
+
+    document.getElementById("dashboardMessage").textContent =
+      "Welcome " + profile.full_name +
+      " — PAMAGI " + profile.role.toUpperCase();
+
+  } catch (error) {
+    loginMessage.textContent = error.message;
+    await supabaseClient.auth.signOut();
+  }
+}
+ else {
   loginMessage.textContent =
     "Login successful, but cloud sync failed. Please try again.";
 }
