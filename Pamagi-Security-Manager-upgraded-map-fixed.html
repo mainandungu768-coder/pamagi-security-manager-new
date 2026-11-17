@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10233f">
+<title>Pamagi Security Manager</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+:root{--navy:#10233f;--navy2:#193b60;--blue:#1769aa;--blue2:#0f5794;--gold:#c69a45;--bg:#f3f6fa;--white:#fff;--ink:#172437;--muted:#64748b;--border:#dce4ee;--green:#16845b;--red:#c0392b;--shadow:0 8px 24px rgba(16,35,63,.07)}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{background:linear-gradient(115deg,var(--navy),#1b4169);color:#fff;padding:22px max(18px,calc((100% - 1180px)/2));border-bottom:3px solid var(--gold)}
+.header-inner{max-width:1180px;margin:auto;display:flex;align-items:center;gap:14px}.brand-mark{width:48px;height:48px;border:1px solid #ffffff66;border-radius:13px;display:grid;place-items:center;color:#f4d18b;font-weight:800;letter-spacing:1px;font-size:18px}
+header h1{margin:0 0 3px;font-size:22px;letter-spacing:1.3px}header p{margin:0;color:#d6e2f0;font-size:12px;letter-spacing:.5px}
+nav{display:flex;gap:7px;padding:11px max(14px,calc((100% - 1180px)/2));background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:0;z-index:100;box-shadow:0 3px 12px #10233f0a}
+button{cursor:pointer;border:0;border-radius:8px;padding:10px 14px;font-weight:650;font-size:13px;transition:.15s}button:disabled{opacity:.55;cursor:wait}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #1769aa38;outline-offset:1px}
+nav button{background:transparent;color:#43536a;white-space:nowrap}nav button:hover,nav button.active{background:#edf3f9;color:var(--navy)}nav button.active{box-shadow:inset 0 -2px var(--gold)}
+.primary{background:var(--blue);color:white}.primary:hover{background:var(--blue2)}.danger{background:var(--red);color:#fff}.secondary{background:#e9eff6;color:var(--navy)}
+main{max-width:1180px;margin:auto;padding:26px 20px 40px}.page{display:none}.page.active{display:block}
+h2{margin:0 0 8px;color:var(--navy);font-size:24px;letter-spacing:-.3px}h3{color:var(--navy);margin:0 0 12px;font-size:16px}.page-intro{color:var(--muted);margin:0 0 20px;font-size:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:15px;margin-bottom:20px}.card,.panel{background:#fff;border:1px solid var(--border);border-radius:13px;padding:19px;box-shadow:var(--shadow)}
+.card{position:relative;overflow:hidden}.card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--blue)}.card small{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}.card strong{display:block;font-size:30px;line-height:1.2;margin-top:9px;color:var(--navy);font-weight:750}.panel{margin-bottom:18px}
+form{display:grid;gap:14px}label{display:grid;gap:7px;font-weight:650;font-size:13px;color:#34445b}input,select{width:100%;padding:12px 13px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;background:#fff;color:var(--ink)}input:focus,select:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px #1769aa1a}input[type=file]{padding:9px}
+.table-wrap{overflow-x:auto;padding:0}table{width:100%;border-collapse:collapse;background:#fff;min-width:650px}th,td{padding:12px 14px;border-bottom:1px solid var(--border);text-align:left;font-size:13px}th{background:#f1f5f9;color:#42536b;font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}tbody tr:hover{background:#f8fafc}.empty{color:var(--muted);padding:18px}.status{color:var(--muted);font-size:13px}.status-pill{display:inline-block;border-radius:20px;padding:4px 9px;font-size:11px;font-weight:700;background:#e8eef5;color:#334155}
+#pamagiMap{height:470px;width:100%;border-radius:12px;z-index:1}.map-help{font-size:12px;color:var(--muted);margin:8px 0 0}
+#loginScreen{background:linear-gradient(135deg,#0c1b30,#173b60)!important}#loginForm{background:#fff!important;color:var(--ink);box-shadow:0 24px 70px #0005}#loginForm h2{font-size:22px;margin-bottom:4px}#loginForm p{color:var(--muted)}#loginForm label{color:#34445b}#loginForm button{background:var(--blue)!important;color:#fff}
+#calendarGrid button{border:1px solid #10233f10;font-weight:650}.calendar-day{min-height:38px}.calendar-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:12px}.legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.toolbar input{flex:1;min-width:220px;margin:0}.notice{padding:11px 13px;border-radius:8px;background:#eef4fa;color:#36516d;font-size:13px;margin:12px 0}.small-btn{padding:7px 10px;font-size:12px}
+footer{text-align:center;padding:24px;color:#7b8798;font-size:12px}
+@media(min-width:760px){#guardForm,#siteLocationForm{grid-template-columns:repeat(2,minmax(0,1fr));align-items:end}#guardForm button,#siteLocationForm button{grid-column:1/-1;justify-self:start;min-width:180px}}
+@media(max-width:650px){header{padding:16px 15px}header h1{font-size:19px}nav{padding:9px 10px}nav button{padding:10px 11px;font-size:12px}main{padding:18px 12px 30px}h2{font-size:21px}.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card,.panel{padding:14px}.card strong{font-size:25px}th,td{padding:10px;font-size:12px}#pamagiMap{height:360px}.calendar-day{min-height:34px;padding:6px 0!important}}
+</style>
+</head>
+<body>
+<div id="loginScreen" style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;font-family:Arial,sans-serif">
+<form id="loginForm" style="padding:28px;border-radius:14px;width:100%;max-width:380px">
+<div class="brand-mark" style="background:#10233f;margin-bottom:16px">PS</div>
+<h2>Pamagi Security Manager</h2><p>Sign in to manage your security operations.</p>
+<label for="loginEmail">Email address<input id="loginEmail" type="email" required autocomplete="username"></label>
+<label for="loginPassword">Password<input id="loginPassword" type="password" required autocomplete="current-password"></label>
+<button type="submit" class="primary" style="width:100%;margin-top:5px">Sign In</button>
+<p id="loginMessage" role="status" aria-live="polite"></p>
+</form></div>
+<header><div class="header-inner"><div class="brand-mark">PS</div><div><h1>PAMAGI SECURITY</h1><p>SECURITY OPERATIONS &amp; WORKFORCE MANAGEMENT</p></div></div></header>
+<nav aria-label="Main navigation">
+<button class="active" data-page="dashboard">Overview</button><button data-page="guards">Guards</button><button data-page="attendance">Attendance</button><button data-page="sitesMap">Client Sites Map</button><button data-page="adminPortal">Admin</button><button data-page="supervisorPortal">Supervisor</button><button data-page="guardPortal">Guard Portal</button>
+</nav>
+<main>
+<section id="dashboard" class="page active">
+<h2>Operations Overview</h2><p class="page-intro">A clear view of your guard workforce, deployments and daily activity.</p>
+<div class="cards"><div class="card"><small>Total Guards</small><strong id="totalGuards">0</strong></div><div class="card"><small>Sites Covered</small><strong id="totalSites">0</strong></div><div class="card"><small>Attendance Records</small><strong id="totalAttendance">0</strong></div></div>
+<div class="panel"><div class="toolbar" style="justify-content:space-between"><h3 style="margin:0">Recent Activity</h3><button type="button" class="secondary small-btn" id="syncButton">Sync Cloud Records</button></div><p id="dashboardMessage">Welcome to Pamagi Security Manager.</p><p id="cloudStatus" class="status">Checking cloud connection...</p></div>
+<div class="panel"><h3>Quick actions</h3><div class="toolbar"><button class="primary" data-goto="guards">Register a Guard</button><button class="secondary" data-goto="attendance">Record Attendance</button><button class="secondary" data-goto="sitesMap">View Client Sites</button></div></div>
+</section>
+<section id="guards" class="page">
+<h2>Guard Management</h2><p class="page-intro">Register, search and maintain your deployed security personnel.</p>
+<div class="panel"><form id="guardForm">
+<label>Full Name<input id="guardName" required maxlength="100"></label><label>Phone Number<input id="guardPhone" type="tel" required maxlength="30"></label><label>National ID<input id="guardId" required maxlength="30"></label><label>Deployment Site<input id="guardSite" required maxlength="100"></label><label>Guard Photo<input id="guardPhoto" type="file" accept="image/jpeg,image/png,image/webp"></label>
+<button class="primary" type="submit">Register Guard</button></form></div>
+<h3>Registered Guards</h3><div class="toolbar"><input type="search" id="guardSearch" placeholder="Search by name, phone, ID or site..."><span class="status" id="guardCount"></span></div>
+<div class="panel table-wrap"><table><thead><tr><th>Photo</th><th>Name</th><th>Phone</th><th>National ID</th><th>Site</th><th>Action</th></tr></thead><tbody id="guardRows"></tbody></table><p id="guardEmpty" class="empty">No guards registered yet.</p></div>
+</section>
+<section id="attendance" class="page">
+<h2>Attendance Management</h2><p class="page-intro">Record daily duty status and review each guard’s monthly calendar.</p>
+<div class="panel" id="guardCalendarPanel"><h3 id="calendarGuardName">Guard Attendance Calendar</h3>
+<div class="toolbar" style="justify-content:space-between"><button type="button" class="secondary" id="previousMonth">← Previous</button><strong id="calendarMonth"></strong><button type="button" class="secondary" id="nextMonth">Next →</button></div>
+<div id="calendarGrid" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center"></div>
+<div class="calendar-legend"><span><i class="legend-dot" style="background:#22c55e"></i>Present</span><span><i class="legend-dot" style="background:#ef4444"></i>Absent</span><span><i class="legend-dot" style="background:#f59e0b"></i>On Leave</span><span><i class="legend-dot" style="background:#3b82f6"></i>Off Duty</span></div>
+<div id="calendarSummary" class="notice"><strong>Monthly summary:</strong> Present <b id="presentCount">0</b> · Absent <b id="absentCount">0</b> · On Leave <b id="leaveCount">0</b> · Off Duty <b id="offDutyCount">0</b></div><p id="calendarMessage" class="status">Select a guard to view their attendance calendar.</p></div>
+<div class="panel"><form id="attendanceForm"><label>Guard<select id="attendanceGuard" required><option value="">Select a guard</option></select></label><label>Date<input id="attendanceDate" type="date" required></label><label>Status<select id="attendanceStatus" required><option value="Present">Present</option><option value="Absent">Absent</option><option value="Off Duty">Off Duty</option><option value="On Leave">On Leave</option></select></label><button class="primary" type="submit">Save Attendance</button></form></div>
+<h3>Attendance History</h3><div class="panel table-wrap"><table><thead><tr><th>Date</th><th>Guard</th><th>Status</th><th>Action</th></tr></thead><tbody id="attendanceRows"></tbody></table><p id="attendanceEmpty" class="empty">No attendance records yet.</p></div>
+</section>
+<section id="sitesMap" class="page">
+<h2>Client Sites Map</h2><p class="page-intro">View client locations and the number of guards assigned to each site.</p>
+<div class="notice">Site map locations are saved in this browser only. They are not yet shared across devices through Supabase.</div>
+<div class="panel"><h3>Add or Update Client Site Location</h3><form id="siteLocationForm"><label>Site Name<input id="mapSiteName" required maxlength="100"></label><label>Latitude<input id="mapLatitude" type="number" step="any" min="-90" max="90" required placeholder="e.g. -1.286389"></label><label>Longitude<input id="mapLongitude" type="number" step="any" min="-180" max="180" required placeholder="e.g. 36.817223"></label><button class="primary" type="submit">Save Site Location</button></form><p class="map-help">Tip: use the coordinates from Google Maps. Search for the client site, long-press or right-click the location, then copy its coordinates.</p></div>
+<div id="pamagiMap"></div><p class="map-help">Map data © OpenStreetMap contributors · Map tiles © CARTO</p>
+<div class="panel" style="margin-top:15px"><h3>Saved Site Locations</h3><div id="siteLocationList" class="status">No locations saved yet.</div></div>
+</section>
+<section id="adminPortal" class="page"><h2>Administrator Portal</h2><p class="page-intro">Management overview of workforce and records available to your account.</p>
+<div class="cards"><div class="card"><small>Total Guards</small><strong id="adminTotalGuards">0</strong></div><div class="card"><small>Active Guards</small><strong id="adminActiveGuards">0</strong></div><div class="card"><small>Deployment Sites</small><strong id="adminTotalSites">0</strong></div><div class="card"><small>Attendance Records</small><strong id="adminTotalAttendance">0</strong></div><div class="card"><small>Payroll Records</small><strong id="adminTotalPayroll">0</strong></div></div>
+<div class="panel"><h3>Administrator Dashboard</h3><p id="adminWelcome">Welcome to PAMAGI Security Management.</p><p id="adminSyncStatus" class="status">Waiting for cloud data...</p><p class="map-help">The Supervisor and Guard Portal pages are reserved for future role-specific features; they are not active workflows yet.</p></div></section>
+<section id="supervisorPortal" class="page"><h2>Supervisor Portal</h2><div class="panel"><p>Supervisor site management is not enabled yet. The existing guard and attendance tools remain available from their main pages.</p></div></section>
+<section id="guardPortal" class="page"><h2>Guard Portal</h2><div class="panel"><p>Individual guard self-service is not enabled yet. This page is reserved for a future guard login workflow.</p></div></section>
+</main>
+<footer>Pamagi Security Manager · Workforce &amp; Site Operations</footer>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+"use strict";
+const STORAGE_KEY="pamagiNewManagerData";
+const supabaseUrl="https://tayckdpdmadofigcuwtb.supabase.co";
+const supabaseKey="sb_publishable_fM8HHAbaHOamAbEA10nPFA_eNej42Zm";
+const supabaseClient=window.supabase.createClient(supabaseUrl,supabaseKey);
+let appData={guards:[],attendance:[],siteLocations:[]};
+let currentProfile=null,calendarGuardId="",calendarViewDate=new Date(),pamagiMap=null,pamagiSiteMarkers=[];
+
+function loadData(){
+ try{
+  const saved=localStorage.getItem(STORAGE_KEY);
+  if(saved){
+   const parsed=JSON.parse(saved);
+   if(parsed&&Array.isArray(parsed.guards)&&Array.isArray(parsed.attendance)){
+    appData=parsed;
+    if(!Array.isArray(appData.siteLocations))appData.siteLocations=[];
+   }
+  }
+ }catch(error){console.error("Could not load saved data:",error);alert("Saved browser data could not be read. The original data has not been overwritten.");}
+}
+function saveData(){
+ try{localStorage.setItem(STORAGE_KEY,JSON.stringify(appData));return true;}
+ catch(error){console.error("Could not save data:",error);alert("Could not save data in this browser. Check available storage space.");return false;}
+}
+function showPage(pageName){
+ document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===pageName));
+ document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===pageName));
+ if(pageName==="sitesMap")setTimeout(initializePamagiMap,100);
+ if(pageName==="adminPortal"&&currentProfile)loadAdminDashboard();
+}
+document.querySelectorAll("[data-page]").forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.page)));
+document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.goto)));
+
+function localDateString(date=new Date()){return date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0");}
+function renderGuardCalendar(){
+ const guard=appData.guards.find(g=>String(g.id)===String(calendarGuardId));
+ const grid=document.getElementById("calendarGrid"),message=document.getElementById("calendarMessage");
+ grid.replaceChildren();
+ if(!guard){document.getElementById("calendarGuardName").textContent="Guard Attendance Calendar";document.getElementById("calendarMonth").textContent="";message.textContent="Select a guard to view their attendance calendar.";["presentCount","absentCount","leaveCount","offDutyCount"].forEach(id=>document.getElementById(id).textContent="0");return;}
+ document.getElementById("calendarGuardName").textContent=(guard.name||"Guard")+" — Attendance";
+ const year=calendarViewDate.getFullYear(),month=calendarViewDate.getMonth(),monthKey=year+"-"+String(month+1).padStart(2,"0");
+ const records=appData.attendance.filter(r=>String(r.guardId)===String(guard.id)&&r.date&&r.date.slice(0,7)===monthKey);
+ document.getElementById("presentCount").textContent=records.filter(r=>r.status==="Present").length;
+ document.getElementById("absentCount").textContent=records.filter(r=>r.status==="Absent").length;
+ document.getElementById("leaveCount").textContent=records.filter(r=>r.status==="On Leave").length;
+ document.getElementById("offDutyCount").textContent=records.filter(r=>r.status==="Off Duty").length;
+ document.getElementById("calendarMonth").textContent=calendarViewDate.toLocaleDateString("en-GB",{month:"long",year:"numeric"});
+ ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(day=>{const d=document.createElement("div");d.textContent=day;d.style.cssText="font-weight:bold;padding:6px 0;font-size:12px";grid.appendChild(d);});
+ const first=new Date(year,month,1),offset=(first.getDay()+6)%7,days=new Date(year,month+1,0).getDate();
+ for(let i=0;i<offset;i++)grid.appendChild(document.createElement("div"));
+ const colors={Present:"#bbf7d0",Absent:"#fecaca","On Leave":"#fed7aa","Off Duty":"#bfdbfe"};
+ for(let day=1;day<=days;day++){
+  const date=monthKey+"-"+String(day).padStart(2,"0"),record=records.find(r=>r.date===date),cell=document.createElement("button");
+  cell.type="button";cell.className="calendar-day";cell.textContent=day;cell.style.background=record?(colors[record.status]||"#e2e8f0"):"#edf2f8";cell.style.color="#10233f";cell.title=record?record.status:"Not marked";
+  cell.onclick=()=>{document.getElementById("attendanceGuard").value=String(guard.id);document.getElementById("attendanceDate").value=date;if(record)document.getElementById("attendanceStatus").value=record.status;message.textContent=date+(record?" — "+record.status:" — Not marked")+". Select a status below and save.";document.getElementById("attendanceForm").scrollIntoView({behavior:"smooth",block:"center"});};
+  grid.appendChild(cell);
+ }
+ message.textContent="Select any date to mark or update that day's attendance.";
+}
+document.getElementById("previousMonth").onclick=()=>{calendarViewDate.setDate(1);calendarViewDate.setMonth(calendarViewDate.getMonth()-1);renderGuardCalendar();};
+document.getElementById("nextMonth").onclick=()=>{calendarViewDate.setDate(1);calendarViewDate.setMonth(calendarViewDate.getMonth()+1);renderGuardCalendar();};
+document.getElementById("attendanceGuard").addEventListener("change",function(){calendarGuardId=this.value;renderGuardCalendar();});
+
+function renderApp(){
+ document.getElementById("totalGuards").textContent=appData.guards.length;
+ const sites=new Set(appData.guards.map(g=>(g.site||"").trim().toLowerCase()).filter(Boolean));
+ document.getElementById("totalSites").textContent=sites.size;
+ document.getElementById("totalAttendance").textContent=appData.attendance.length;
+ const tbody=document.getElementById("guardRows");tbody.replaceChildren();
+ const term=document.getElementById("guardSearch").value.trim().toLowerCase();
+ const visible=appData.guards.filter(g=>[g.name,g.phone,g.nationalId,g.site].some(v=>String(v||"").toLowerCase().includes(term)));
+ visible.forEach(guard=>{
+  const row=document.createElement("tr"),photoCell=document.createElement("td");
+  if(guard.photo){const img=document.createElement("img");img.src=guard.photo;img.alt=guard.name||"Guard photo";img.loading="lazy";img.style.cssText="width:48px;height:48px;object-fit:cover;border-radius:50%";img.onerror=()=>{img.style.display="none";};photoCell.appendChild(img);}
+  row.appendChild(photoCell);
+  [guard.name,guard.phone,guard.nationalId,guard.site].forEach((value,index)=>{const td=document.createElement("td");if(index===0){const link=document.createElement("button");link.type="button";link.className="secondary small-btn";link.textContent=value||"Unnamed";link.onclick=()=>{calendarGuardId=String(guard.id);calendarViewDate=new Date();showPage("attendance");document.getElementById("attendanceGuard").value=String(guard.id);renderGuardCalendar();};td.appendChild(link);}else td.textContent=value||"";row.appendChild(td);});
+  const actions=document.createElement("td"),edit=document.createElement("button"),del=document.createElement("button");edit.type=del.type="button";edit.textContent="Edit";edit.className="secondary small-btn";del.textContent="Delete";del.className="danger small-btn";del.style.marginLeft="5px";
+  edit.onclick=()=>{const name=prompt("Guard name:",guard.name||"");if(name===null)return;const phone=prompt("Guard phone:",guard.phone||"");if(phone===null)return;const nationalId=prompt("National ID:",guard.nationalId||"");if(nationalId===null)return;const site=prompt("Assigned site:",guard.site||"");if(site===null)return;if(!name.trim()||!nationalId.trim()){alert("Name and National ID cannot be blank.");return;}guard.name=name.trim();guard.phone=phone.trim();guard.nationalId=nationalId.trim();guard.site=site.trim();saveData();renderApp();};
+  del.onclick=async()=>{
+   if(!confirm("Archive "+(guard.name||"this guard")+"? Their attendance history will be kept."))return;
+   del.disabled=true;
+   try{
+    if(!String(guard.id).startsWith("guard-")){
+     const {data,error}=await supabaseClient.from("pamagi_manager_guards").update({is_deleted:true}).eq("id",guard.id).select("id");
+     if(error)throw error;if(!data||!data.length)throw new Error("The cloud guard record was not updated.");
+    }
+    appData.guards=appData.guards.filter(g=>String(g.id)!==String(guard.id));
+    saveData();renderApp();renderGuardCalendar();if(pamagiMap)displayPamagiSites();alert("Guard archived. Attendance history was preserved.");
+   }catch(error){console.error(error);alert("Could not archive this guard in the cloud. Your local records have been kept.");del.disabled=false;}
+  };
+  actions.append(edit,del);row.appendChild(actions);tbody.appendChild(row);
+ });
+ document.getElementById("guardCount").textContent=visible.length+" shown · "+appData.guards.length+" total";
+ document.getElementById("guardEmpty").hidden=visible.length>0;document.getElementById("guardEmpty").textContent=term?"No matching guards found.":"No guards registered yet.";
+ const select=document.getElementById("attendanceGuard"),selected=select.value;select.replaceChildren(new Option("Select a guard",""));
+ appData.guards.forEach(g=>select.add(new Option(g.name||"Unnamed guard",String(g.id))));if(appData.guards.some(g=>String(g.id)===String(selected)))select.value=selected;
+ const attendanceBody=document.getElementById("attendanceRows");attendanceBody.replaceChildren();
+ appData.attendance.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")).forEach(record=>{
+  const guard=appData.guards.find(g=>String(g.id)===String(record.guardId)),tr=document.createElement("tr");
+  [record.date,guard?guard.name:"Archived / unavailable guard",record.status].forEach((v,i)=>{const td=document.createElement("td");td.textContent=v||"";tr.appendChild(td);});
+  const td=document.createElement("td"),button=document.createElement("button");button.type="button";button.textContent="Delete";button.className="danger small-btn";
+  button.onclick=async()=>{if(!confirm("Delete attendance for "+(guard?guard.name:"this guard")+" on "+record.date+"?"))return;button.disabled=true;try{
+   if(!String(record.guardId).startsWith("guard-")){const {error}=await supabaseClient.from("pamagi_manager_attendance").delete().eq("guard_id",record.guardId).eq("attendance_date",record.date);if(error)throw error;}
+   appData.attendance=appData.attendance.filter(r=>!(String(r.guardId)===String(record.guardId)&&r.date===record.date));saveData();renderApp();renderGuardCalendar();
+  }catch(error){console.error(error);alert("Could not delete this cloud attendance record. No local record was removed.");button.disabled=false;}};
+  td.appendChild(button);tr.appendChild(td);attendanceBody.appendChild(tr);
+ });
+ document.getElementById("attendanceEmpty").hidden=appData.attendance.length>0;
+ document.getElementById("dashboardMessage").textContent=appData.guards.length?"Your guard register is ready to manage.":"Register your first guard to get started.";
+ renderGuardCalendar();renderSiteLocationList();
+}
+document.getElementById("guardSearch").addEventListener("input",renderApp);
+
+document.getElementById("guardForm").addEventListener("submit",async function(event){
+ event.preventDefault();const name=document.getElementById("guardName").value.trim(),phone=document.getElementById("guardPhone").value.trim(),nationalId=document.getElementById("guardId").value.trim(),site=document.getElementById("guardSite").value.trim(),file=document.getElementById("guardPhoto").files[0];
+ if(!name||!phone||!nationalId||!site){alert("Please complete all required fields.");return;}
+ if(appData.guards.some(g=>String(g.nationalId||"").toLowerCase()===nationalId.toLowerCase())){alert("A guard with this National ID is already registered.");return;}
+ let photo="";
+ if(file){if(file.size>3*1024*1024){alert("Please choose a photo smaller than 3 MB.");return;}if(!["image/jpeg","image/png","image/webp"].includes(file.type)){alert("Please use a JPG, PNG or WebP photo.");return;}
+  try{photo=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});}catch(e){alert("Could not read the selected photo.");return;}
+ }
+ appData.guards.push({id:"guard-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),name,phone,nationalId,site,photo});
+ if(!saveData())return;renderApp();this.reset();alert("Guard registered on this device. Use Sync Cloud Records to upload it to Supabase.");
+});
+
+document.getElementById("attendanceDate").value=localDateString();
+document.getElementById("attendanceForm").addEventListener("submit",function(event){
+ event.preventDefault();const guardId=document.getElementById("attendanceGuard").value,date=document.getElementById("attendanceDate").value,status=document.getElementById("attendanceStatus").value;
+ if(!guardId||!date||!status){alert("Please complete all attendance fields.");return;}
+ const index=appData.attendance.findIndex(r=>String(r.guardId)===String(guardId)&&r.date===date);
+ const record={guardId,date,status,_pendingSync:true};if(index>=0)appData.attendance[index]=record;else appData.attendance.push(record);
+ if(!saveData())return;renderApp();alert("Attendance saved on this device. Use Sync Cloud Records to upload it.");
+});
+
+async function loadUserProfile(){
+ const {data:{user},error:authError}=await supabaseClient.auth.getUser();if(authError||!user)throw new Error("User is not authenticated.");
+ const {data,error}=await supabaseClient.from("pamagi_profiles").select("id, full_name, role, active").eq("id",user.id).single();if(error)throw error;
+ if(data.active===false){await supabaseClient.auth.signOut();throw new Error("Your PAMAGI account is inactive.");}
+ currentProfile=data;return data;
+}
+async function syncCloudData(){
+ const status=document.getElementById("cloudStatus");status.textContent="Syncing records with Supabase...";
+ try{
+  const localGuards=[...appData.guards],localAttendance=[...appData.attendance];
+  const {data:cloudGuards,error:guardsError}=await supabaseClient.from("pamagi_manager_guards").select("*");if(guardsError)throw guardsError;
+  const guardIdMap={};
+  for(const guard of localGuards){
+   let cloud=cloudGuards.find(g=>guard.nationalId&&g.national_id===guard.nationalId);
+   if(!cloud)cloud=cloudGuards.find(g=>g.name===guard.name&&g.phone===(guard.phone||null)&&g.site===(guard.site||null));
+   if(cloud&&cloud.is_deleted===true){guardIdMap[guard.id]=null;continue;}
+   if(!cloud){const {data,error}=await supabaseClient.from("pamagi_manager_guards").insert({name:guard.name,phone:guard.phone||null,national_id:guard.nationalId||null,site:guard.site||null}).select().single();if(error)throw error;cloud=data;cloudGuards.push(cloud);}
+   guardIdMap[guard.id]=cloud.id;
+   if(guard.photo&&!cloud.photo){
+    let photoUrl=guard.photo;
+    if(guard.photo.startsWith("data:image/")){
+     const match=guard.photo.match(/^data:(image\/[^;]+);base64,(.+)$/);if(!match)throw new Error("A guard photo has an invalid format.");
+     const mime=match[1],ext=mime==="image/jpeg"?"jpg":mime.split("/")[1],path=cloud.id+"-"+Date.now()+"."+ext;
+     const bytes=Uint8Array.from(atob(match[2]),c=>c.charCodeAt(0));
+     const {error:uploadError}=await supabaseClient.storage.from("guard-photos").upload(path,bytes,{contentType:mime,upsert:true});if(uploadError)throw uploadError;
+     const {data:urlData}=supabaseClient.storage.from("guard-photos").getPublicUrl(path);photoUrl=urlData.publicUrl;
+    }
+    const {error:updateError}=await supabaseClient.from("pamagi_manager_guards").update({photo:photoUrl}).eq("id",cloud.id);if(updateError)throw updateError;cloud.photo=photoUrl;guard.photo=photoUrl;
+   }
+  }
+  const {data:cloudAttendance,error:attError}=await supabaseClient.from("pamagi_manager_attendance").select("*");if(attError)throw attError;
+  for(const record of localAttendance){
+   if(record._pendingSync!==true)continue;
+   const mapped=guardIdMap[record.guardId]||(cloudGuards.some(g=>g.id===record.guardId&&g.is_deleted!==true)?record.guardId:null);if(!mapped)continue;
+   const existing=cloudAttendance.find(a=>a.guard_id===mapped&&a.attendance_date===record.date);
+   if(existing){if(existing.status!==record.status){const {error}=await supabaseClient.from("pamagi_manager_attendance").update({status:record.status}).eq("id",existing.id);if(error)throw error;existing.status=record.status;}}
+   else{const {data,error}=await supabaseClient.from("pamagi_manager_attendance").insert({guard_id:mapped,attendance_date:record.date,status:record.status}).select().single();if(error)throw error;cloudAttendance.push(data);}
+  }
+  const [{data:finalGuards,error:fgError},{data:finalAttendance,error:faError}]=await Promise.all([
+   supabaseClient.from("pamagi_manager_guards").select("*"),supabaseClient.from("pamagi_manager_attendance").select("*")
+  ]);if(fgError)throw fgError;if(faError)throw faError;
+  const active=finalGuards.filter(g=>g.is_deleted!==true);
+  appData.guards=active.map(g=>{const local=localGuards.find(x=>(g.national_id&&x.nationalId===g.national_id)||(x.name===g.name&&x.phone===(g.phone||"")&&x.site===(g.site||"")));return{id:g.id,name:g.name,phone:g.phone||"",nationalId:g.national_id||"",site:g.site||"",photo:g.photo||(local&&local.photo)||""};});
+  appData.attendance=finalAttendance.map(a=>({guardId:a.guard_id,date:a.attendance_date,status:a.status}));
+  saveData();renderApp();status.textContent="Cloud sync completed successfully.";return true;
+ }catch(error){console.error("Pamagi cloud sync failed:",error);status.textContent="Cloud sync failed: "+(error.message||"Check your connection and Supabase permissions.");return false;}
+}
+document.getElementById("syncButton").addEventListener("click",async function(){this.disabled=true;this.textContent="Syncing...";const ok=await syncCloudData();this.disabled=false;this.textContent="Sync Cloud Records";if(ok)alert("Cloud records synced successfully.");else alert("Cloud sync failed. See the message on the Overview page.");});
+async function loadAdminDashboard(){
+ try{
+  if(!currentProfile||String(currentProfile.role||"").toLowerCase()!=="admin"){document.getElementById("adminSyncStatus").textContent="This account is not assigned the administrator role.";return;}
+  const results=await Promise.all([
+   supabaseClient.from("pamagi_manager_guards").select("id,is_deleted"),
+   supabaseClient.from("pamagi_sites").select("id"),
+   supabaseClient.from("pamagi_manager_attendance").select("id"),
+   supabaseClient.from("pamagi_payroll").select("id")
+  ]);
+  results.forEach(r=>{if(r.error)throw r.error;});
+  const guards=results[0].data||[],active=guards.filter(g=>g.is_deleted!==true);
+  document.getElementById("adminTotalGuards").textContent=guards.length;
+  document.getElementById("adminActiveGuards").textContent=active.length;
+  document.getElementById("adminTotalSites").textContent=(results[1].data||[]).length;
+  document.getElementById("adminTotalAttendance").textContent=(results[2].data||[]).length;
+  document.getElementById("adminTotalPayroll").textContent=(results[3].data||[]).length;
+  document.getElementById("adminWelcome").textContent="Welcome "+(currentProfile.full_name||"Administrator");
+  document.getElementById("adminSyncStatus").textContent="Dashboard connected to Supabase. Archived guards remain included in Total Guards.";
+ }catch(error){console.error("Admin dashboard error:",error);document.getElementById("adminSyncStatus").textContent="Could not load dashboard data. Check Supabase table access and permissions.";}
+}
+
+function renderSiteLocationList(){
+ const box=document.getElementById("siteLocationList");box.replaceChildren();
+ if(!appData.siteLocations.length){box.textContent="No locations saved yet.";return;}
+ appData.siteLocations.forEach(site=>{const row=document.createElement("div");row.style.cssText="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #e2e8f0";
+  const label=document.createElement("span");label.textContent=site.name+" ("+site.latitude+", "+site.longitude+")";
+  const del=document.createElement("button");del.type="button";del.className="danger small-btn";del.textContent="Remove";del.onclick=()=>{if(!confirm("Remove map location for "+site.name+"?"))return;appData.siteLocations=appData.siteLocations.filter(s=>s!==site);saveData();renderSiteLocationList();displayPamagiSites();};
+  row.append(label,del);box.appendChild(row);
+ });
+}
+function displayPamagiSites(){
+ if(!pamagiMap||!pamagiMap.isStyleLoaded())return;
+ pamagiSiteMarkers.forEach(marker=>marker.remove());pamagiSiteMarkers=[];
+ const bounds=new maplibregl.LngLatBounds();
+ appData.siteLocations.forEach(site=>{
+  const lat=Number(site.latitude),lng=Number(site.longitude);
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)||lat < -90||lat > 90||lng < -180||lng > 180)return;
+  const assigned=appData.guards.filter(g=>(g.site||"").trim().toLowerCase()===(site.name||"").trim().toLowerCase());
+  const popup=document.createElement("div"),heading=document.createElement("h3");
+  heading.textContent=site.name;popup.appendChild(heading);
+  const count=document.createElement("p");count.textContent="Guards assigned: "+assigned.length;popup.appendChild(count);
+  if(!assigned.length){const empty=document.createElement("p");empty.textContent="No guards currently assigned to this site.";popup.appendChild(empty);}
+  assigned.forEach((g,i)=>{
+   const item=document.createElement("p");item.style.cssText="border-top:1px solid #ddd;padding-top:6px;margin:6px 0";
+   const today=appData.attendance.find(a=>String(a.guardId)===String(g.id)&&a.date===localDateString());
+   item.textContent=(i+1)+". "+(g.name||"Guard")+" · "+(g.phone||"No phone")+" · "+(today?today.status:"No attendance marked today");
+   popup.appendChild(item);
+  });
+  const markerElement=document.createElement("div");
+  markerElement.style.cssText="width:22px;height:22px;background:#1769aa;border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 7px #0006;cursor:pointer";
+  const marker=new maplibregl.Marker({element:markerElement,anchor:"bottom"})
+   .setLngLat([lng,lat])
+   .setPopup(new maplibregl.Popup({offset:22,maxWidth:"280px"}).setDOMContent(popup))
+   .addTo(pamagiMap);
+  pamagiSiteMarkers.push(marker);bounds.extend([lng,lat]);
+ });
+ if(pamagiSiteMarkers.length===1)pamagiMap.flyTo({center:pamagiSiteMarkers[0].getLngLat(),zoom:13});
+ else if(pamagiSiteMarkers.length>1)pamagiMap.fitBounds(bounds,{padding:55,maxZoom:13});
+ else pamagiMap.flyTo({center:[37.9062,0.0236],zoom:6});
+}
+function initializePamagiMap(){
+ const mapContainer=document.getElementById("pamagiMap");
+ if(!window.maplibregl){mapContainer.textContent="Map library could not load. Check your internet connection and refresh the page.";return;}
+ if(pamagiMap){pamagiMap.resize();displayPamagiSites();return;}
+ pamagiMap=new maplibregl.Map({
+  container:"pamagiMap",
+  style:"https://tiles.openfreemap.org/styles/liberty",
+  center:[37.9062,0.0236],
+  zoom:6,
+  attributionControl:true
+ });
+ pamagiMap.addControl(new maplibregl.NavigationControl(),"top-right");
+ pamagiMap.on("load",displayPamagiSites);
+ pamagiMap.on("error",event=>console.warn("Map loading notice:",event.error||event));
+}
+document.getElementById("siteLocationForm").addEventListener("submit",function(event){
+ event.preventDefault();const name=document.getElementById("mapSiteName").value.trim(),latitude=Number(document.getElementById("mapLatitude").value),longitude=Number(document.getElementById("mapLongitude").value);
+ if(!name||!Number.isFinite(latitude)||!Number.isFinite(longitude)||latitude< -90||latitude>90||longitude< -180||longitude>180){alert("Please enter a valid site name, latitude and longitude.");return;}
+ const existing=appData.siteLocations.find(s=>s.name.toLowerCase()===name.toLowerCase());
+ if(existing){existing.latitude=latitude;existing.longitude=longitude;}else appData.siteLocations.push({name,latitude,longitude});
+ if(!saveData())return;renderSiteLocationList();displayPamagiSites();this.reset();alert("Client site location saved on this device.");
+});
+
+const loginForm=document.getElementById("loginForm"),loginMessage=document.getElementById("loginMessage"),loginScreen=document.getElementById("loginScreen");
+loginForm.addEventListener("submit",async function(event){
+ event.preventDefault();loginMessage.textContent="Signing in...";
+ const email=document.getElementById("loginEmail").value.trim(),password=document.getElementById("loginPassword").value;
+ const {error}=await supabaseClient.auth.signInWithPassword({email,password});
+ if(error){loginMessage.textContent="Sign-in failed. Check your email and password.";return;}
+ loginMessage.textContent="Loading your account...";
+ try{
+  const profile=await loadUserProfile();const synced=await syncCloudData();
+  if(!synced)throw new Error("Login succeeded, but cloud sync failed. Please try again.");
+  loginMessage.textContent="";loginScreen.style.display="none";
+  document.getElementById("dashboardMessage").textContent="Welcome "+(profile.full_name||"")+" — PAMAGI "+String(profile.role||"USER").toUpperCase();
+  if(String(profile.role||"").toLowerCase()==="admin")loadAdminDashboard();
+ }catch(error){loginMessage.textContent=error.message||"Could not load your account.";await supabaseClient.auth.signOut();}
+});
+async function restoreSession(){
+ const {data,error}=await supabaseClient.auth.getSession();if(error||!data.session)return;
+ try{currentProfile=await loadUserProfile();const synced=await syncCloudData();if(synced){loginScreen.style.display="none";document.getElementById("dashboardMessage").textContent="Welcome "+(currentProfile.full_name||"")+" — PAMAGI "+String(currentProfile.role||"USER").toUpperCase();if(String(currentProfile.role||"").toLowerCase()==="admin")loadAdminDashboard();}}
+ catch(error){console.error("Session restore failed:",error);loginScreen.style.display="flex";document.getElementById("loginMessage").textContent="Please sign in again: "+error.message;}
+}
+loadData();renderApp();restoreSession();
+</script>
+</body>
+</html>
